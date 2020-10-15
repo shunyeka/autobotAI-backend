@@ -1,0 +1,40 @@
+COMMON: &common
+  LOGGER_CONFIG:
+    version: 1
+    formatters:
+      default:
+        format: "[%(asctime)s] %(levelname)s in %(module)s/%(filename)s:%(funcName)s:%(lineno)d -- %(message)s"
+    handlers:
+      wsgi:
+        class: logging.StreamHandler
+        stream: ext://flask.logging.wsgi_errors_stream
+        formatter: default
+    root:
+      level: ERROR
+      handlers:
+      - wsgi
+
+
+local: &local
+  <<: *common
+  DEBUG: True
+  ACCESS_KEY: "ACCESS_KEY for local testing"
+  SECRET_KEY: "SECRET_KEY for local testing"
+  COGNITO_CLIENT_ID: "COGNITO_CLIENT_ID"
+  INSTANCE_SCHEDULER_CONFIG:
+    remote_cf_name: "autobotAI-scheduler-local"
+    remote_cf_template_url: "https://s3.amazonaws.com/solutions-reference/aws-instance-scheduler/latest/instance-scheduler-remote.template"
+    master_account_no: "Your master AWS account id"
+    config_dynamo_table: "Dynamod db table that was created when you deployed the AWS instance scheduler"
+    resource_tag_name: "autobot-scheduled"
+
+staging: &staging
+  <<: *common
+  DEBUG: False
+  COGNITO_CLIENT_ID: "COGNITO_CLIENT_ID"
+  INSTANCE_SCHEDULER_CONFIG:
+    remote_cf_name: "autobotAI-scheduler-staging"
+    remote_cf_template_url: "https://s3.amazonaws.com/solutions-reference/aws-instance-scheduler/latest/instance-scheduler-remote.template"
+    master_account_no: "Your master AWS account id"
+    config_dynamo_table: "Dynamod db table that was created when you deployed the AWS instance scheduler"
+    resource_tag_name: "autobot-scheduled"

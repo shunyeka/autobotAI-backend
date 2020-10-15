@@ -1,0 +1,10 @@
+git+git://github.com/AmitChotaliya/flask-ask
+Flask-Cors==3.0.6
+simplejson==3.16.0
+botocore
+boto3
+python-dateutil
+jmespath
+pytz
+Flask
+PyYAML

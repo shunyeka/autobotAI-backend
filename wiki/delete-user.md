@@ -1,0 +1,4 @@
+- Delete the autobot setup cloudformation from user's account.
+- Delete user from users table
+- delete the user data from cloud_service_provider
+- Delete user from Cognito Userpool

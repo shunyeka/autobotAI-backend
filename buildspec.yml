@@ -1,0 +1,9 @@
+version: 0.2
+
+phases:  
+  build:
+    commands:
+      - cd autobot-async
+      - npm install -g serverless      
+      - npm install
+      - sls deploy --stage $DEPLOY_ENV

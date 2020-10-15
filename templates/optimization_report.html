@@ -1,0 +1,119 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Report</title>
+    <style type="text/css">
+        @media print{
+          body {-webkit-print-color-adjust: exact;}
+          table,tr,td,th{
+            border: 1px solid black;
+            font-size: 14px;
+            }
+            table{
+                margin-left:auto;
+                margin-right:auto;
+            }
+            td{
+                padding:5px;
+            }
+            h2{
+            text-align:center;
+            background: -webkit-linear-gradient(left,#f26400 ,#de6391);
+
+             -webkit-background-clip: text;
+             -webkit-text-fill-color: transparent;
+            font-family: sans-serif;
+
+
+            }
+            .print-button{
+                display:none!important;
+            }
+        }
+        * {-webkit-print-color-adjust: exact;}
+        table,tr,td,th{
+            border: 1px solid black;
+            font-size: 14px;
+
+        }
+        table{
+            margin-left:auto;
+            margin-right:auto;
+        }
+        td{
+            padding:5px;
+        }
+        h2{
+        text-align:center;
+        background: -webkit-linear-gradient(left,#f26400 ,#de6391);
+
+         -webkit-background-clip: text;
+         -webkit-text-fill-color: transparent;
+        font-family: sans-serif;
+
+
+        }
+        .print-button{
+            background: lightgrey;
+            width: 100px;
+            height: 30px;
+            border: 1px solid;
+            margin-bottom: 20px;
+    }
+
+
+    </style>
+</head>
+
+<body>
+<h2>AWS Optimization Report from autobotAI</h2> <br>
+<button class="print-button" onclick="window.print();">Print</button>
+<table>
+    <tr>
+        <th>Category</th>
+        <th>Check</th>
+        <th>Status</th>
+        <th>Recources Processed</th>
+        <th>Recources Flagged</th>
+        <th>Recources Suppresed</th>
+        <th>Resources Ignored</th>
+
+    </tr>
+
+
+    {%set ns = namespace(count = 0) %}
+    {% for k1,v1 in dict_data.items() %}
+    {% if v1|length != 0 %}
+    {% for l in v1%}
+    <tr>
+        {% if ns.count < 1 %}
+        <td rowspan="{{ v1|length }}">
+            {{ k1|replace('_',' ')|title }}
+        </td>
+        {% set ns.count = ns.count+1 %}
+        {% endif %}
+        <td>{{ l[0]['name']}}</td>
+        {% if l[0]['status'] == 'warning' %}
+        <td style="background-color:#ffff00">{{ l[0]['status'] }}</td>
+        {% elif l[0]['status'] == 'ok' %}
+        <td style="background-color:#00ff00">{{ l[0]['status'] }}</td>
+        {% elif l[0]['status'] == 'error' %}
+        <td style="background-color:#ff0000">{{ l[0]['status'] }}</td>
+        {% else %}
+        <td>{{ l[0]['status'] }}</td>
+        {% endif %}
+        <td>{{ l[0]['resourcesProcessed']}}</td>
+        <td>{{ l[0]['resourcesFlagged']}}</td>
+        <td>{{ l[0]['resourcesSuppressed']}}</td>
+        <td>{{ l[0]['resourcesFlagged']}}</td>
+    </tr>
+    {% endfor%}
+
+    {% set ns.count = 0 %}
+    {% endif %}
+    {% endfor %}
+
+
+</table>
+</body>
+</html>

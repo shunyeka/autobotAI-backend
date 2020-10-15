@@ -1,0 +1,10 @@
+__pycache__
+*.py[cod]
+.serverless
+node_modules
+.DS_Store
+temp/
+venv/
+.idea/
+.vscode/
+autobot-async/static
