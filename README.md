@@ -61,3 +61,6 @@ https://docs.conda.io/en/latest/miniconda.html
 export LDFLAGS="-L/usr/local/opt/openssl@1.1/lib"
 export CPPFLAGS="-I/usr/local/opt/openssl@1.1/include"
 pip install cryptography --global-option=build_ext --global-option="-L/usr/local/opt/openssl/lib" --global-option="-I/usr/local/opt/openssl/include"
+
+
+NodeJS version 8.0.x for serverless.
