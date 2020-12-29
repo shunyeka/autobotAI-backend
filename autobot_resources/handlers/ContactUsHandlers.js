@@ -4,7 +4,7 @@ const ContactInfo = require('../lib/ContactInfo')
 const Utilities = require('../lib/Utilities')
 const https = require('https');
 const querystring = require('querystring');
-const gRecaptchaSecret = '6LdYXU0UAAAAAE89aBfrwqnyZPOK-Ak_sV4-0nzM';
+const gRecaptchaSecret = 'xxxxxxxxxxxxxxxxxxxxxxxxxxx';
 
 function sendEmail(bodyJson) {
   var params = {
