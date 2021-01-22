@@ -4,16 +4,16 @@ provider:
   name: aws
   runtime: python3.6
   stage: ${opt:stage, 'staging'}
-  role: arn:aws:iam::203681130776:role/Administrator_access_lambda
+  role: IAM role for all the lambdas
   liveTablePrefix: ''
   stagingTablePrefix: 'staging_'
   liveAuthorizerArn: Live Cognito user pool arn
-  stagingAuthorizerArn: arn:aws:cognito-idp:us-east-1:203681130776:userpool/us-east-1_v5rrx9V4h
+  stagingAuthorizerArn: Live Cognito user pool arn
   tablePrefix: ${self:provider.${self:provider.stage}TablePrefix}
-  authorizerArn: ${self:provider.${self:provider.stage}AuthorizerArn}  
+  authorizerArn: ${self:provider.${self:provider.stage}AuthorizerArn}
 
 plugins:
- # - serverless-domain-manager
+  - serverless-domain-manager
   - serverless-python-requirements
   - serverless-wsgi
 
@@ -24,17 +24,14 @@ custom:
   pythonRequirements:
     dockerizePip: non-linux
   domain:
-      staging: test.autobot.live
+      staging: staging backedn api domain name
       live: live backend api domain name
-  #customDomain:
-  # domainName: ${self:custom.domain.${self:provider.stage}}
-  #     stage: ${self:provider.stage}
-  #     basePath: api
-  #     certificateName: '*.autobot.live'
-  #     createRoute53Record: true
-  #     endpointType: 'regional'
-  #     apiType: rest
-  #     autoDomain: false
+  customDomain:
+    domainName: ${self:custom.domain.${self:provider.stage}}
+    basePath: ''
+    stage: ${self:provider.stage}
+    createRoute53Record: true
+    certificateName: '*.autobot.live'
 
 
 
@@ -81,6 +78,7 @@ functions:
       - schedule: rate(5 minutes)
     environment:
       FLASK_ENV: ${self:provider.stage}
+  alexa_skill_endpoint:
     handler: app.lambda_handler
     memorySize: 256
     timeout: 120
