@@ -3,17 +3,15 @@ service: autobot-oapi
 provider:
   name: aws
   runtime: python3.6
-  stage: ${opt:stage, 'staging'}
-  role: IAM role for all the lambdas
+  stage: ${opt:stage, 'test'}
+  role: AutobotAILambdaRole
   liveTablePrefix: ''
   stagingTablePrefix: 'staging_'
-  liveAuthorizerArn: Live Cognito user pool arn
-  stagingAuthorizerArn: Live Cognito user pool arn
+  testTablePrefix: 'test_'
   tablePrefix: ${self:provider.${self:provider.stage}TablePrefix}
-  authorizerArn: ${self:provider.${self:provider.stage}AuthorizerArn}
 
 plugins:
-  - serverless-domain-manager
+  # - serverless-domain-manager
   - serverless-python-requirements
   - serverless-wsgi
 
@@ -24,14 +22,15 @@ custom:
   pythonRequirements:
     dockerizePip: non-linux
   domain:
-      staging: staging backedn api domain name
-      live: live backend api domain name
-  customDomain:
-    domainName: ${self:custom.domain.${self:provider.stage}}
-    basePath: ''
-    stage: ${self:provider.stage}
-    createRoute53Record: true
-    certificateName: '*.autobot.live'
+      staging: ${env:STAGING_DOMAIN}
+      live: ${env:LIVE_DOMAIN}
+      test: ${env:TEST_DOMAIN}
+  # customDomain:
+  #   domainName: ${self:custom.domain.${self:provider.stage}}
+  #   basePath: ''
+  #   stage: ${self:provider.stage}
+  #   createRoute53Record: true
+  #   certificateName: '*.autobot.live'
 
 
 
@@ -47,13 +46,17 @@ functions:
           method: ANY
           cors: true
           authorizer:
-            arn: ${self:provider.authorizerArn}
+            type: COGNITO_USER_POOLS
+            authorizerId: 
+              Ref: AutobotAIApiGatewayAuthorizer 
       - http:
           path: /{proxy+}
           method: ANY
           cors: true
           authorizer:
-            arn: ${self:provider.authorizerArn}
+            type: COGNITO_USER_POOLS
+            authorizerId: 
+              Ref: AutobotAIApiGatewayAuthorizer
       - http:
           path: /api/v1/public/
           method: ANY
@@ -66,6 +69,7 @@ functions:
     handler: data_fetcher.fetch
     memorySize: 1024
     timeout: 900
+    role: ${self:provider.role}
     events:
       - sns: DataFetch-${self:provider.stage}
     environment:
@@ -74,6 +78,7 @@ functions:
     handler: data_fetch_scheduler.schedule
     memorySize: 1024
     timeout: 180
+    role: ${self:provider.role}
     events:
       - schedule: rate(5 minutes)
     environment:
@@ -82,24 +87,25 @@ functions:
     handler: app.lambda_handler
     memorySize: 256
     timeout: 120
+    role: ${self:provider.role}
     environment:
       FLASK_ENV: ${self:provider.stage}
-  post_confirmation:
+  PostConfirmation:
     name: autobot-api-${self:provider.stage}-congintoUserCreateConfirm
     handler: autobot_resources/other-lambdas/create-user-on-confirmation.handler
     memorySize: 256
     runtime: nodejs12.x
     timeout: 180
-    role: LambdaRole
+    role: ${self:provider.role}
     environment:
       STAGE: ${self:provider.stage}
 
 resources: # CloudFormation template syntax from here on.
   Resources: 
-    LambdaRole: 
+    AutobotAILambdaRole: 
       Type: "AWS::IAM::Role"
       Properties: 
-        RoleName: ${self:provider.stage}_autobotAI_Role
+        RoleName: ${self:provider.stage}_autobotAI_Role_Serverless
         AssumeRolePolicyDocument: 
           Version: "2012-10-17"
           Statement: 
@@ -112,10 +118,10 @@ resources: # CloudFormation template syntax from here on.
                 - "sts:AssumeRole"
         Path: "/"
         
-    LambdaRolePolicies: 
+    AutobotAILambdaRolePolicies: 
       Type: "AWS::IAM::Policy"
       Properties: 
-        PolicyName: ${self:provider.stage}_autobotAI_Policy
+        PolicyName: ${self:provider.stage}_autobotAI_Policy_serverless
         PolicyDocument: 
           Version: "2012-10-17"
           Statement: 
@@ -125,9 +131,9 @@ resources: # CloudFormation template syntax from here on.
               Resource: "*"
         Roles: 
           - 
-            Ref: LambdaRole
+            Ref: AutobotAILambdaRole
 
-    CognitoUserPool:
+    AutobotAICognitoUserPool:
       Type: AWS::Cognito::UserPool
       Properties: 
         UserPoolName: ${self:provider.stage}_autobotAI_Cognito_Userpool
@@ -139,7 +145,7 @@ resources: # CloudFormation template syntax from here on.
           EmailSendingAccount: COGNITO_DEFAULT
         LambdaConfig:
           PostConfirmation: 
-            "Fn::GetAtt": [ post_confirmationLambdaFunction, Arn ]
+            "Fn::GetAtt": [ PostConfirmationLambdaFunction, Arn ]
         Policies: 
           PasswordPolicy:
             MinimumLength: "8"
@@ -167,26 +173,40 @@ resources: # CloudFormation template syntax from here on.
             AttributeDataType: String
             Mutable: true
             Name: country
+            
+    # API Gateway Authorizer
+    AutobotAIApiGatewayAuthorizer: 
+      Type: AWS::ApiGateway::Authorizer
+      Properties: 
+        AuthorizerResultTtlInSeconds: 10
+        IdentitySource: method.request.header.Authorization
+        Name: ${self:provider.stage}_AutobotAI_Cognito_Authorizer
+        RestApiId: 
+          Ref: ApiGatewayRestApi
+        Type: COGNITO_USER_POOLS
+        ProviderARNs: 
+          - {"Fn::Join": ["", ["arn:aws:cognito-idp:", {Ref: "AWS::Region"}, ":", {Ref: "AWS::AccountId"}, ":userpool/", Ref: AutobotAICognitoUserPool]]}
+
     # Creates a User Pool Client to be used by the identity pool
-    CognitoUserPoolClient:
+    AutobotAICognitoUserPoolClient:
       Type: "AWS::Cognito::UserPoolClient"
       Properties:
         ClientName: ${self:provider.stage}_autobotAI_Cognito_Userpool_app_client
         GenerateSecret: false
         UserPoolId: 
-          Ref: CognitoUserPool
+          Ref: AutobotAICognitoUserPool
     
     # Creates a federeated Identity pool
-    CognitoIdentityPool:
+    AutobotAICognitoIdentityPool:
       Type: "AWS::Cognito::IdentityPool"
       Properties:
         IdentityPoolName: ${self:provider.stage}_autobotAI_Cognito_Identity_pool
         AllowUnauthenticatedIdentities: true
         CognitoIdentityProviders: 
           - ClientId: 
-              Ref: CognitoUserPoolClient
+              Ref: AutobotAICognitoUserPoolClient
             ProviderName:
-              "Fn::GetAtt": [ CognitoUserPool, ProviderName ]
+              "Fn::GetAtt": [ AutobotAICognitoUserPool, ProviderName ]
 
     DynamoDBTable1: 
       Type: AWS::DynamoDB::Table

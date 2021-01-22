@@ -4,17 +4,19 @@
   "description": "autobot-new-backend",
   "main": "index.js",
   "dependencies": {
-    "serverless": "^1.47.0",
-    "serverless-domain-manager": "^2.6.10",
-    "serverless-python-requirements": "^4.2.5",
-    "serverless-wsgi": "^1.6.1",
-    "dot-prop": ">=4.2.1",
     "bl": ">=1.2.3",
     "decompress": ">=4.2.1",
+    "dot-prop": ">=4.2.1",
     "https-proxy-agent": ">=2.2.3",
-    "lodash": ">=4.17.19"
+    "lodash": ">=4.17.19",
+    "serverless": "^1.83.2",
+    "serverless-iam-roles-per-function": "^3.1.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "serverless-domain-manager": "^5.1.0",
+    "serverless-python-requirements": "^5.1.0",
+    "serverless-wsgi": "^1.7.6"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

@@ -61,6 +61,12 @@ https://docs.conda.io/en/latest/miniconda.html
 export LDFLAGS="-L/usr/local/opt/openssl@1.1/lib"
 export CPPFLAGS="-I/usr/local/opt/openssl@1.1/include"
 pip install cryptography --global-option=build_ext --global-option="-L/usr/local/opt/openssl/lib" --global-option="-I/usr/local/opt/openssl/include"
-
-
 NodeJS version 8.0.x for serverless.
+
+## Add Resource Based Policy To Lambda Function.
+* After successfully deployment of  the serverless template we can update permission for  resource based policy of post confirmation lambda functionn by running the below command from aws cli.
+* Note: Resource based policy of lambda function can only be update from AWS CLI.
+```bash
+aws lambda add-permission --function-name autobot-api-test-congintoUserCreateConfirm --action lambda:InvokeFunction --statement-id postConfirmation --principal cognito-idp.amazonaws.com
+aws lambda remove-permission --function-name autobot-api-test-congintoUserCreateConfirm --statement-id postConfirmation
+```
