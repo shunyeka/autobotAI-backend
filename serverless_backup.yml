@@ -1,0 +1,112 @@
+service: autobot-oapi
+
+provider:
+  name: aws
+  runtime: python3.6
+  stage: ${opt:stage, 'staging'}
+  role: IAM role for all the lambdas
+  liveTablePrefix: ''
+  stagingTablePrefix: 'staging_'
+  liveAuthorizerArn: Live Cognito user pool arn
+  stagingAuthorizerArn: Live Cognito user pool arn
+  tablePrefix: ${self:provider.${self:provider.stage}TablePrefix}
+  authorizerArn: ${self:provider.${self:provider.stage}AuthorizerArn}
+
+plugins:
+  - serverless-domain-manager
+  - serverless-python-requirements
+  - serverless-wsgi
+
+custom:
+  wsgi:
+    app: app.app
+    packRequirements: false
+  pythonRequirements:
+    dockerizePip: non-linux
+  domain:
+      staging: staging backedn api domain name
+      live: live backend api domain name
+  customDomain:
+    domainName: ${self:custom.domain.${self:provider.stage}}
+    basePath: ''
+    stage: ${self:provider.stage}
+    createRoute53Record: true
+    certificateName: '*.autobot.live'
+
+
+
+functions:
+  oapi:
+    handler: wsgi.handler
+    environment:
+       FLASK_ENV: ${self:provider.stage}
+    timeout: 900
+    events:
+      - http:
+          path: /
+          method: ANY
+          cors: true
+          authorizer:
+            arn: ${self:provider.authorizerArn}
+      - http:
+          path: /{proxy+}
+          method: ANY
+          cors: true
+          authorizer:
+            arn: ${self:provider.authorizerArn}
+      - http:
+          path: /api/v1/public/
+          method: ANY
+          cors: true
+      - http:
+          path: /api/v1/public/{proxy+}
+          method: ANY
+          cors: true
+  fetch_data:
+    handler: data_fetcher.fetch
+    memorySize: 1024
+    timeout: 900
+    events:
+      - sns: DataFetch-${self:provider.stage}
+    environment:
+      FLASK_ENV: ${self:provider.stage}
+  schedule_data_fetch:
+    handler: data_fetch_scheduler.schedule
+    memorySize: 1024
+    timeout: 180
+    events:
+      - schedule: rate(5 minutes)
+    environment:
+      FLASK_ENV: ${self:provider.stage}
+  alexa_skill_endpoint:
+    handler: app.lambda_handler
+    memorySize: 256
+    timeout: 120
+    environment:
+      FLASK_ENV: ${self:provider.stage}
+
+
+package:
+  include:
+    - autobot_helpers/**
+    - controllers/**
+    - models/**
+    - services/**
+    - templates/**
+    - creds/**
+    - app.py
+    - config.yml
+    - flask_extended.py
+    - requirements.txt
+    - serverless.yml
+    - templates.yml
+  exclude:
+    - .serverless/**
+    - .vscode/**
+    - .idea
+    - .DS_Store
+    - venv/**
+    - templates/**
+    - temp/**
+    - static/**
+    - node_modules/**
